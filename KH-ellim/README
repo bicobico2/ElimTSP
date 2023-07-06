@@ -1,0 +1,71 @@
+Experimental edge elimination code written by Keld Helsgaun, September 9, 2022.
+
+KH-elim is released under the MIT License. Copyright (c) Keld Helsgaun
+
+Installation:
+  
+    Execute ‘make’
+
+Check of the installation:
+
+    Execute ‘make check’
+
+Source code files:
+
+    kh-elim.c:	    	Sequential code
+    kh-elim_omp.c: 	Parallel OpenMP version of kh-elim.c
+    kh-elim_common.c:	Common source code for kh-elim and kh-elim.omp
+    kh-elim.h:	        Common header for kh-elim and kh-elim.omp
+
+Executables (after 'make' or 'make check'):
+
+    kh-elim:	Sequential 
+    kh-elim_omp:	Parallel 
+
+Usage:
+
+    kh-elim[_omp] [- see below -] -T tsp_file edge_file
+       	-E    print an E for each eliminated edge
+        -J    use Jonker-Volgenant elimination
+        -e #  use extra edges, range 0 to 2, default
+        -n #  use extra nodes, range 0 to 3, default 0
+        -o f  dump the remaining edges to file f
+        -p #  maximum potential points, default 10
+        -q #  quicker search for potential points
+        -r    repeat until no more eliminations can be made
+        -s    perform strong close point elimination
+        -t f  tour file (no tour edges will be eliminated)
+        -T f  TSPLIB file
+        -w #  maximum witness edges for each edge, default 10
+        -x d  double, stretch factor, d in [0.5;2.5] is best, default 1.0
+
+tsp_file must be in TSPLIB format.
+
+edge_file must have one of the following two formats:
+
+        #nodes #edges
+        end1 end2 weight
+        end1 end2 weight
+        .
+        .
+        .
+        end1 end2 weght
+
+or
+
+        #nodes #edges
+        end1 end2
+        end1 end2
+        .
+        .
+        .
+        end1 end2
+
+where each "end1 end2" line represents the end nodes of an edge. The nodes
+should be numbered from 0 up to #nodes - 1, and weights, if given, must
+be integers. There should be #edges "end1 end2" lines in the file.
+
+Note:
+  The results in Table 7 of the paper "Local elimination in the 
+  traveling salesman problem" were produced using "kh-elim -Jq" (for a
+  single core) and "kh-elim_omp -Jq" (for multiple cores).
