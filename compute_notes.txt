@@ -1,0 +1,226 @@
+
+Local Elimination in the TSP: Computational Study
+-------------------------------------------------
+
+We provide notes on the computations reported in the paper "Local elimination
+in the traveling salesman problem" by Cook, Helsgaun, Hougardy, and Schroeder.
+
+Software
+--------
+
+1. elim: Implementation of the algorithm described in the paper. The source
+code is available under the open source MIT license. It can also be viewed at
+
+https://github.com/bicobico2/ElimTSP
+
+The main executable is elim. We also use the verify executable in a process to
+verify the results produced by elim.
+
+2. kh_elim: An alternative implementation of some of the ideas from
+the paper and ideas described in the Jonker-Volgenant 1984 paper. The code
+is given in the KH-elim directory. It is available under the MIT license
+and can also be viewed at the GitHub site listed above.
+
+3. LKH 2.0.9. The source code for the current version of LKH can be found at
+
+http://webhotel4.ruc.dk/~keld/research/LKH/
+
+The development of LKH is not part of the paper. The code is used only in
+the process to generate test data for the elimination code.
+
+4. concorde. Like LKH, the development of concorde is not part of the paper. 
+The code is used in the process to generate test data and to remark on a
+potential application of the reduced edge sets in Section 5.2.1 of the paper.
+
+
+Data
+----
+
+1. TSP files. The data sets for the TSPLIB instances can be found on the
+TSPLIB site
+
+http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/
+
+The three 100K+ instances can be found at
+
+http://dimacs.rutgers.edu/archive/Challenges/TSP/download.html
+https://www.math.uwaterloo.ca/tsp/data/ml/monalisa.html
+https://www.math.uwaterloo.ca/tsp/data/usa/index.html
+
+2. Edge files. The edge sets for testing the elimination routines are
+in the data directory of the GitHub site listed above. These files are in
+concorde's edge format. The first line gives the number of nodes n and the
+number of edges m. Each of the remaining m lines specifies the two ends of an
+edge and the edge length. The nodes are numbered 0 up to n-1. The directory
+does not contain files for the three 100K+ instances, due to GitHub size
+limits.
+
+
+Computations
+------------
+
+Below we specify the command-line options used in computations reported in the
+paper.
+
+1. Table 1: LP Reduced-Cost Elimination (LKH+Concorde)
+
+The table reports the process to create edge sets for testing the elimination
+code. The test instances are 11 examples from the TSPLIB having greater
+than 3,000 points. To obtain the edge sets, we first ran LKH to build a good
+tour and then ran concorde to build an LP relaxation and use reduced costs to
+eliminate edges. In each case we specified an upper bound of 1 greater than
+the cost of the LKH tour. The LKH parameters are described in the paper.
+
+The concorde LP relaxations were made with two runs. An initial -mC48 run and
+a second -j run that takes the output of the first run and applies the
+cutting-plane routines until no violated cuts are added.
+
+The concorde command-line is 
+
+concorde -s99 -mC48 -Z1 -B -v -u 137695 -U pcb3038.tsp
+-s99  specifies 99 as a random seed
+-mC48 tells the code to repeatedly run local cuts up to chunksize 48
+-Z1   tells the code to use the domino-parity separator
+-B    tells the code not to branch
+-v    turns on more output
+-u    specifies 137695 as an upper bound
+-U    tells the code to dump the root LP and the edge set
+
+The command-line for the second -j run is
+
+concorde -s99 -j -Z1 -B -v -U -u 137695 -M pcb3038.mas -P pcb3038.pul
+              -Y pcb3038.dompul -S pcb3038.sav
+-j    tells the code to continue cutting until no violations
+-M    specifies the master file containing the problem data (this is
+      produced by the initial concorde run)
+-P    specifies the cut pool from the initial run
+-Y    specifies the pool of domino-parity constraints
+-S    specifies the LP relaxation from the initial run
+
+2. Table 4: Edge Elimination
+
+This table reports runs of elim on the TSPLIB instances. The runs were made
+on a network of 4 machines having a total of 48 cores.
+
+The command-line is
+
+elim -A -t pcb3038.tour -T pcb3038.tsp pcb3038.all.edg
+-A   tells the code to run the loop described in Table 3 of the paper
+-t   specifies a TSP tour file (in concorde's format)
+-T   specifies the TSP data (in TSPLIB format)
+
+This test is for a single core. For the parallel code, the command-line for
+the boss is
+
+elim -h -A -t pcb3038.tour -T pcb3038.tsp pcb3038.all.edg
+-h   tell the code to be a boss process for a parallel run
+
+The command-line for the workers is
+
+elim -v -g boss_machine_name
+-v   turns on additional output
+-g   tell the code to be a worker for the boss running on the indicated machine
+
+
+3. Table 5: Random Euclidean Instances with n = 100
+
+The initial concorde run to obtain the optimal tour uses
+
+concorde -s99 -f DATA/r100_000000.tsp
+-f   tells the code to write an optimal tour as an edge file (this allows
+     for an easy check that the results of elimination are compatible with
+     the tour)
+
+The sparse edge sets were generated using the subtour relaxation and an upper
+bound of 1.001 times the length of a tour found by concorde's linkern
+heuristic.
+
+The elim command-line is
+
+elim -A -T DATA/r100.tsp r100.all.edg
+
+4. Table 6: Random Euclidean Instances with n = 10,000
+
+The command-line
+
+elim -h -A -T DATA/r10000.tsp EDGES/r10000.all.edg
+
+starts a boss for the r10000 instance. The worker command line is
+
+elim -v -g boss_machine_name
+
+5. Table 7: Single (c, d) Pair of Tutte Moves
+
+This table reports results using
+
+kh-elim -Jq -T pcb3038.tsp pcb3038.all.edg
+-J specifies to use the Jonker-Volgenant algorithm
+-q specifies to use a quicker search for potential points
+
+6. Table 8: Random Euclidean Complete-Graph Instances, n = 1000, 2500, 5000
+
+The results were obtained with two runs. The initial run uses
+
+elim -k5 -b -T r1000.tsp r1000.all.edg
+-k5 specifies to use only the brute-force 5-opt moves
+-b  specifies to use only the first three levels
+
+Two changes were made to the source code for these initial runs.
+First, in CCelim_build_ablist() the neighborhood was created by running
+a simple code to find the nodes having the minimum sum of distances to the
+two ends of the edge to be eliminated. This is done by adopting the
+potential_cd_nodes() routine from KH-elim, modified for complete graphs.
+
+static void potential_nodes (int a, int b, int nwant, CCelim_array *ablist,
+        CCelim_graph *G, CCelim_distobj *D)
+{
+    CCelim_node *na = &G->nodelist[a], *nb = &G->nodelist[b];
+    CCelim_node *nc, *cset[100];
+    int ccount = 0, c, i, j, cost;
+
+    for (c = 0; c < G->ncount; c++) {
+        if (c == a || c == b) continue;
+        nc = &G->nodelist[c];
+        cost = nc->cost = dist(a,c,D) + dist(b,c,D);
+        if (ccount == nwant && cost >= cset[nwant-1]->cost) continue;
+        for (j = ccount; j > 0 && cost < cset[j-1]->cost; j--)
+            cset[j] = cset[j-1];
+        cset[j] = nc;
+        if (ccount < nwant) ccount++;
+    }
+    for (i = 0; i < ccount; i++) ablist->arr[i] = cset[i] - G->nodelist;
+    ablist->count = ccount;
+}
+
+Second, to force only brute-force 5-opt moves, in line 445 of the file
+elimmain.c, we set use_tsp = use_tsp_swapping.
+
+The second runs uses the following options, where r1000.remain is the
+reduced edge set returned by the initial run.
+
+elim -k5 -A -T r1000.tsp r1000.remain
+
+Again, on line 445 of elimmain.c we set use_tsp = use_tsp_swapping.
+
+7. Table 9: Complete-Graph Instances (32-core server)
+
+The runs reported in Table 9 use 64 threads on a server equipped with two
+16-core processors. The initial boss run is started with
+
+elim -k5 -h -b -c pla7397.tsp pla7397.all.edg
+-k5 specifies to use only the brute-force 5-opt moves
+-h  specifies the run should be a boss
+-b  specifies to use only the first three levels
+
+And the initial 64 workers are started with
+
+elim -g boss_machine_name
+
+These runs also use the code changes mentioned above.
+
+The second boss run is started with
+
+elim -k5 -h -A -T pr2392.tsp pr2392.remain
+
+where pr2392.remain is the edge set produced by the initial run. The same
+worker command-line as above is used.
