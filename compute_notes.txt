@@ -224,3 +224,9 @@ elim -k5 -h -A -T pr2392.tsp pr2392.remain
 
 where pr2392.remain is the edge set produced by the initial run. The same
 worker command-line as above is used.
+
+Results
+-------
+
+The reduced-edge and fixed-edge files for the three 100K+ instances are
+given in the results directory of the GitHub ElimTSP site.
